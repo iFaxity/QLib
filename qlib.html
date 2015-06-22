@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title>CeMS | MCE test</title>
+    <style>
+        div {
+            display: block;
+            overflow: visible;
+        }
+
+        #target {
+			background: blue;
+			width: 100%;
+			height: 300px;
+		}
+		
+		#target2 {
+			background: red;
+			width: 100%;
+			height: 250px;
+		}
+
+        #target3 {
+            background: green;
+            width: 100%;
+            height: 250px;
+        }
+    </style>
+</head>
+<body>
+    <div id="target">
+		<a>I am target 1</a>
+	</div>
+	
+    <div id="target2" class="lel">
+		<p>I am target 2</p>
+	</div>
+
+    <div id="target3" class="lel toplel">
+        <a>I am target 3</a>
+    </div>
+</body>
+	<script src="qlib.js"></script>
+	<script src="http://code.jquery.com/jquery-1.11.3.min.js"></script>
+    <script>
+        Q(document).event("ready", function() {
+            var div = Q(document.getElementsByTagName("div"));
+            div.event("click", "a", function() {
+                Q(this).prepend("<h2>Hel</h2>");
+
+                var qdiv = Q(div[1]);
+                /*alert(qdiv.hasClass("lel"));
+                qdiv.removeClass("lel")
+                        .hasClass("lel");*/
+
+                qdiv.addClass("lels");
+            });
+
+            /*alert(Q(div[0]).hasClass("lel"));
+            alert(Q(div[1]).hasClass("lel"));
+            alert(Q(div[2]).hasClass("lel"));*/
+        });
+
+        alert(Q.version);
+    </script>
+</html>
