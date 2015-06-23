@@ -35,15 +35,28 @@
         var request = new XMLHttpRequest();
         request.open(settings["method"].toUpperCase(), settings["url"], settings["async"], settings["user"], settings["password"]);
 
-        // TODO: change to readystatechanged and check better
-        if(typeof settings["success"] == "function")
-            request.onload = settings["success"];
-        if(typeof settings["error"] == "function")
-            request.onerror = settings["error"];
+        request.onreadystatechange = function()
+        {
+            if (request.readyState == 4) {
+                if(request.status == 200)
+                    settings["success"](request.responseText);
+                else
+                    settings["error"](request.status, request.statusText);
+            }
+        };
 
         if(typeof settings["data"] != "undefined") {
-            if(settings["data"] instanceof Array)
-                settings["data"] = Q.serialize(settings["data"]);
+            if(typeof settings["data"] != "string" && settings["data"] instanceof FormData) {
+                var text = "";
+                for(var prop in settings["data"]) {
+                    if(settings["data"].hasOwnProperty(prop)) {
+                        if(text != "")
+                            text += "&";
+                        text += prop + "=" + settings["data"][prop];
+                    }
+                }
+                settings["data"] = text;
+            }
 
             // Set Request Headers
             request.setRequestHeader("Content-type", settings["contentType"]);
