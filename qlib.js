@@ -13,6 +13,48 @@
 
     // Core accessors
     Q.version = "0.1.0";
+    Q.ajax = function(obj) {
+        var settings = {
+            url: "",
+            method: "",
+            async: true,
+            data: null,
+            user: "",
+            password: "",
+            contentType: "text/plain;charset=utf-8",
+            success: null,
+            error: null
+        };
+
+        // Override default settings
+        for(var key in obj) {
+            if(obj.hasOwnProperty(key) && settings.hasOwnProperty(key))
+                obj[key] = set[key];
+        }
+
+        var request = new XMLHttpRequest();
+        request.open(settings["method"].toUpperCase(), settings["url"], settings["async"], settings["user"], settings["password"]);
+
+        // TODO: change to readystatechanged and check better
+        if(typeof settings["success"] == "function")
+            request.onload = settings["success"];
+        if(typeof settings["error"] == "function")
+            request.onerror = settings["error"];
+
+        if(typeof settings["data"] != "undefined") {
+            if(settings["data"] instanceof Array)
+                settings["data"] = Q.serialize(settings["data"]);
+
+            // Set Request Headers
+            request.setRequestHeader("Content-type", settings["contentType"]);
+            request.setRequestHeader("Content-length", settings["data"].length);
+            request.setRequestHeader("Connection", "close");
+
+            request.send(settings["data"]);
+        }
+        else
+            request.send();
+    };
     Q.isInt = function(value) {
         var x;
         if (isNaN(value))
@@ -20,13 +62,28 @@
         x = parseFloat(value);
         return (x | 0) === x;
     };
+    Q.isFunction = function(value) {
+
+    };
+    Q.serialize = function(data) {
+        var text = "";
+        for(var prop in data) {
+            if (data.hasOwnProperty(prop)) {
+                if(text != "")
+                    text += "&";
+                text += prop.toString() + "=" + data[prop].toString();
+            }
+        }
+    };
 
     /**
      * QLib main object
-     * @param selector {string|element|NodeList} CSS selector as string or HTML element(s)
+     * @param selector {string|Element|NodeList} CSS selector as string or HTML element(s)
      * @returns {QLib} QLib object
      */
     var QLib = function(selector) {
+        //TODO: AJAX
+
         state:
             //If selector is a css string selector
             if(typeof selector == "string")
@@ -448,7 +505,7 @@
         };
     }
 
-    // For IE 8
+    // For IE 8 by Niels & Pinal from StackOverflow
     if (!window.getComputedStyle) {
         window.getComputedStyle = function(elem, pseudo) {
             this.el = elem;
@@ -463,6 +520,6 @@
                 return elem.currentStyle[prop] ? elem.currentStyle[prop] : null;
             };
             return this;
-        }
+        };
     }
 })();
