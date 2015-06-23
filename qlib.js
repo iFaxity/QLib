@@ -3,7 +3,7 @@
 (function() {
     /**
      * Initializes a new Q object
-     * @param selector  {string|element|NodeList} CSS selector as string or HTML element(s)
+     * @param selector  {string|Element|NodeList} CSS selector as string or HTML element(s)
      * @returns {Q} Initialized Q object
      * @constructor
      */
@@ -12,16 +12,15 @@
     };
 
     // Core accessors
-    Q.version = "0.1.0";
+    Q.version = "0.1.5";
     Q.ajax = function(obj) {
         var settings = {
             url: "",
-            method: "",
+            method: "POST",
             async: true,
             data: null,
             user: "",
             password: "",
-            contentType: "text/plain;charset=utf-8",
             success: null,
             error: null
         };
@@ -29,40 +28,41 @@
         // Override default settings
         for(var key in obj) {
             if(obj.hasOwnProperty(key) && settings.hasOwnProperty(key))
-                obj[key] = set[key];
+                settings[key] = obj[key];
         }
 
         var request = new XMLHttpRequest();
+
+        // Parse data
+        if(typeof settings["data"] != "undefined" && settings["data"] != null) {
+            if(typeof settings["data"] != "string" && !(settings["data"] instanceof FormData)) {
+                var list = [];
+                for(var prop in settings["data"]) {
+                    if(settings["data"].hasOwnProperty(prop))
+                        list.push(encodeURIComponent(prop) + "=" + encodeURIComponent(settings["data"][prop]));
+                }
+                settings["data"] = list.join("&");
+            }
+        }
+
+        if(settings["method"].toUpperCase() != "POST")
+            settings["url"] += "?" + settings["data"];
+
+        // Open the AJAX request
         request.open(settings["method"].toUpperCase(), settings["url"], settings["async"], settings["user"], settings["password"]);
 
         request.onreadystatechange = function()
         {
-            if (request.readyState == 4) {
-                if(request.status == 200)
-                    settings["success"](request.responseText);
-                else
-                    settings["error"](request.status, request.statusText);
-            }
+            if (request.readyState != 4) return;
+
+            if(request.status == 200 && typeof settings["success"] == "function")
+                settings["success"](request.responseText);
+            else if(typeof settings["error"] == "function")
+                settings["error"](request.status, request.statusText);
         };
 
-        if(typeof settings["data"] != "undefined") {
-            if(typeof settings["data"] != "string" && settings["data"] instanceof FormData) {
-                var text = "";
-                for(var prop in settings["data"]) {
-                    if(settings["data"].hasOwnProperty(prop)) {
-                        if(text != "")
-                            text += "&";
-                        text += prop + "=" + settings["data"][prop];
-                    }
-                }
-                settings["data"] = text;
-            }
-
-            // Set Request Headers
-            request.setRequestHeader("Content-type", settings["contentType"]);
-            request.setRequestHeader("Content-length", settings["data"].length);
-            request.setRequestHeader("Connection", "close");
-
+        if(settings["method"].toUpperCase() == "POST") {
+            request.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
             request.send(settings["data"]);
         }
         else
@@ -117,7 +117,7 @@
         this.length = selector.length;
         var length = selector.length;
         while(length--)
-            this[this.length - length] = selector[length];
+            this[length] = selector[length];
 
 		// Return QLib object
         return this;
@@ -226,20 +226,17 @@
 		},
         /**
          * Gets/Sets the text of the first elements
-         * @returns {string|object} Text of the first elements or this Q object
+         * @returns {string|object} Text of the first element or this Q object
          */
         text: function(text) {
             if(typeof text == "string") {
                 var length = this.length;
-
                 while(length--) {
-                    if(this[length].textContent)
+                    if(typeof this[length].textContent !== "undefined")
                         this[length].textContent = text;
-                    // IE fix
-                    else if(this[length].innerText)
-                        return this[length].innerText;
+                    else
+                        this[length].innerText = text;
                 }
-
                 return this;
             }
 

@@ -40,13 +40,16 @@
     <div id="target3" class="lel toplel">
         <a>I am target 3</a>
     </div>
+
+    <button id="ajax-btn">Click me pls</button>
+    <span id="ajax-div" style="display: block; border: 1px solid black; height: 100px;">Hello</span>
 </body>
 	<script src="qlib.js"></script>
 	<script src="http://code.jquery.com/jquery-1.11.3.min.js"></script>
     <script>
-        Q(document).event("ready", function() {
+        Q(document).on("ready", function() {
             var div = Q(document.getElementsByTagName("div"));
-            div.event("click", "a", function() {
+            div.on("click", "a", function() {
                 Q(this).prepend("<h2>Hel</h2>");
 
                 var qdiv = Q(div[1]);
@@ -57,11 +60,22 @@
                 qdiv.addClass("lels");
             });
 
-            /*alert(Q(div[0]).hasClass("lel"));
-            alert(Q(div[1]).hasClass("lel"));
-            alert(Q(div[2]).hasClass("lel"));*/
-        });
+            var ajaxDiv = Q("#ajax-div");
+            Q("#ajax-btn").on("click", function() {
+                ajaxDiv.text("");
+                Q.ajax({
+                    url: "test.php",
+                    method: "POST",
+                    data: {"lel": "THIS IS PATRICK"},
+                    success: function(text) {
+                        Q("#ajax-div").text(text);
+                    },
+                    error: function(code, text) {
+                        alert("AJAX error. Code: " + code + " " + text);
+                    }
+                });
+            });
 
-        alert(Q.version);
+        });
     </script>
 </html>
