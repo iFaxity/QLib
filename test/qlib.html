@@ -41,41 +41,27 @@
         <a>I am target 3</a>
     </div>
 
+    <h2 id="heading">I'm a heading</h2>
+
     <button id="ajax-btn">Click me pls</button>
     <span id="ajax-div" style="display: block; border: 1px solid black; height: 100px;">Hello</span>
 </body>
-	<script src="qlib.js"></script>
-	<script src="http://code.jquery.com/jquery-1.11.3.min.js"></script>
+	<script src="/src/qlib.js"></script>
+    <script src="/ext/qlib.ext.js"></script>
     <script>
-        Q(document).on("ready", function() {
+        Q.ready(function() {
             var div = Q(document.getElementsByTagName("div"));
             div.on("click", "a", function() {
-                Q(this).prepend("<h2>Hel</h2>");
-
-                var qdiv = Q(div[1]);
-                /*alert(qdiv.hasClass("lel"));
-                qdiv.removeClass("lel")
-                        .hasClass("lel");*/
-
-                qdiv.addClass("lels");
+                Q(this).append("<h2>Hel</h2>");
             });
 
-            var ajaxDiv = Q("#ajax-div");
             Q("#ajax-btn").on("click", function() {
-                ajaxDiv.text("");
-                Q.ajax({
-                    url: "test.php",
-                    method: "POST",
-                    data: {"lel": "THIS IS PATRICK"},
-                    success: function(text) {
-                        Q("#ajax-div").text(text);
-                    },
-                    error: function(code, text) {
-                        alert("AJAX error. Code: " + code + " " + text);
-                    }
-                });
+                var heading = Q("#heading");
+                if(heading.hasClass("fadeOut"))
+                    heading.fadeIn();
+                else
+                    heading.fadeOut();
             });
-
         });
     </script>
 </html>
