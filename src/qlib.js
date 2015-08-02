@@ -21,7 +21,7 @@
      * Get this QLibs version
      * @type {string}
      */
-    Q.version = "0.3.1";
+    Q.version = "0.3.2";
     /**
      * Sends an AJAX request to the requested URL
      * @param obj {string|Object|FormData} Settings object to apply
@@ -45,7 +45,7 @@
         }
 
         // Parse data
-        if(typeof settings["data"] != "undefined" && settings["data"] != null) {
+        if(settings["data"] !== undefined && settings["data"] != null) {
             if(typeof settings["data"] != "string" && !(settings["data"] instanceof FormData)) {
                 var list = [];
                 for(var prop in settings["data"]) {
@@ -87,7 +87,7 @@
      * @param data {string|Object|FormData} Data to send to server.
      */
     Q.getJSON = function(url, callback, data) {
-        if(typeof url == "undefined" && typeof callback == "undefined")
+        if(url === undefined && callback === undefined)
             throw "Parameter Invalid in 'getJSON'. Parameters 'url' and 'data' cant be undefined.";
         Q.ajax({
             url: url,
@@ -107,7 +107,7 @@
      * @param callback {function} Callback to run when file has loaded.
      */
     Q.getFile = function(url, callback) {
-        if(typeof url == "undefined" && typeof callback == "undefined")
+        if(url === undefined && callback === undefined)
             throw "Parameter Invalid in 'getFile'. Parameter 'url' and 'callback' cant be undefined.";
         Q.ajax({
             url: url,
@@ -122,15 +122,11 @@
     };
     /**
      * Checks if the specified object is a Number
-     * @param value {*} Object to check
+     * @param n {*} Object to check
      * @returns {boolean} True or False
      */
-    Q.isNumber = function(value) {
-        var x;
-        if (isNaN(value))
-            return false;
-        x = parseFloat(value);
-        return (x | 0) === x;
+    Q.isNumber = function(n) {
+        return !isNaN(parseFloat(n)) && isFinite(n);
     };
     /**
      * Checks if the specified object is an HTMLNode
@@ -138,7 +134,7 @@
      * @returns {boolean} True or False
      */
     Q.isNode = function(node) {
-        return (typeof node != "undefined" && node && node.nodeType) ? true : false;
+        return node && node.nodeType ? true : false;
     };
     /**
      * Used to extend multiple functions to QLib
@@ -146,8 +142,8 @@
      */
     Q.extend = function(obj) {
         for(var key in obj) {
-            if(obj.hasOwnProperty(key) && typeof obj[key] == "function")
-                QLib.prototype[key] = obj[key];
+            if(obj[key])
+                Q.ex[key] = obj[key];
         }
     };
     /**
@@ -174,7 +170,7 @@
         // Convert the selector into a Node.
         state:
             // If selector is undefined
-            if(typeof selector === "undefined")
+            if(selector === undefined)
                 selector = [];
             // If selector is a string
             else if(typeof selector == "string") {
@@ -182,12 +178,12 @@
                 if(selector.indexOf("<") == 0) {
                     var end = selector.indexOf(">"), min = end;
                     // Check if attributes are specified
-                    if(selector.includes(" ") === true)
+                    if(selector.indexOf(" ") !== -1)
                         min = Math.min(end, selector.indexOf(" "));
                     // Create the element
                     var elem = document.createElement(selector.substring(1, min));
                     // Sets attributes
-                    if(selector.substring(0, end).includes(" ") === true) {
+                    if(selector.substring(0, end).indexOf(" ") !== -1) {
                         var attrs = selector.substring(min + 1, end).replace(/'/g, "'").split("' ");
                         // Set all attributes
                         for(var i = 0; i < attrs.length; i++) {
@@ -295,7 +291,7 @@
         parent: function() {
             var nodes = [];
             this.each(function() {
-                if(!nodes.indexOf(this.parentNode) !== -1 && typeof this.parentNode !== "undefined")
+                if(!nodes.indexOf(this.parentNode) !== -1 && this.parentNode !== undefined)
                     nodes.push(this.parentNode);
             });
             // Return all matched nodes
@@ -315,7 +311,7 @@
                     if(parent == document)
                         break;
                     // If parent already exists then don't add it and continue.
-                    else if(nodes.indexOf(parent) === -1 && typeof parent !== "undefined" && parent.matches(selector))
+                    else if(nodes.indexOf(parent) === -1 && parent !== undefined && parent.matches(selector))
                         nodes.push(parent);
                     // Next parent
                     parent = parent.parentNode;
@@ -330,7 +326,7 @@
          */
         parentsUntil: function(selector) {
             var nodes = [], doc = document.documentElement;
-            if(typeof selector === "undefined")
+            if(selector === undefined)
                 selector = "*";
             this.each(function() {
                 var parent = this.parentNode;
@@ -339,7 +335,7 @@
                     if(parent == doc || parent.matches(selector))
                         break;
                     // If parent already exists then don't add it and continue.
-                    if(!nodes.indexOf(parent) !== -1 && typeof parent != "undefined")
+                    if(!nodes.indexOf(parent) !== -1 && parent !== undefined)
                         nodes.push(parent);
                     // Next parent
                     parent = parent.parentNode;
@@ -460,7 +456,7 @@
                         this.addEventListener(type, handler, false);
                 });
                 // Add event handler
-                if(typeof this.events[eventType] === "undefined")
+                if(this.events[eventType] === undefined)
                     this.events[eventType] = [];
                 this.events[eventType].push(handler);
             }
@@ -568,7 +564,7 @@
             // Set text
             if(typeof text == "string") {
                 this.each(function() {
-                    if(typeof this.textContent !== "undefined")
+                    if(this.textContent !== undefined)
                         this.textContent = text;
                     else
                         this.innerText = text;
@@ -720,7 +716,7 @@
          */
         val: function(value) {
             // Get value
-            if(typeof value === "undefined") {
+            if(value === undefined) {
                 var elem = this[0];
                 if(elem.nodeName !== "input")
                     return "";
@@ -797,25 +793,26 @@
          */
         css: function(name, val) {
             // Check if object or just one entry
-            if(typeof name === "undefined")
+            if(name === undefined)
                 throw "Parameter invalid in 'css'. Parameter 'name' is undefined.";
 
             // If getting a value or setting one.
             if(typeof name === "string") {
-                // Set a value
-                if(typeof val !== "undefined") {
-                    var obj = {};
+                // Get a value
+                var obj = {};
+                if(val === undefined)
+                    return getStyle(this[0])[camelCase(name)];
+                // Set value
+                else {
                     obj[name] = val;
                     name = obj;
                 }
-                // Get value
-                else
-                    return window.getComputedStyle(this[0], null)[name];
             }
             // If obj is an object then set values
             for(var prop in name) {
+                prop = camelCase(prop);
                 this.each(function() {
-                    if(this.style.hasOwnProperty(prop))
+                    if(!this.style[prop])
                         this.style[prop] = name[prop];
                 });
             }
@@ -828,19 +825,18 @@
          */
         outerHeight: function(value) {
             // Value defaults to false
-            if(typeof value === "undefined")
+            if(value === undefined)
                 value = false;
             // Get Value
             if(typeof value === "boolean") {
                 var off = this[0].offsetHeight;
                 if (value === true)
-                    off += parseInt(this[0].style.marginTop) + parseInt(this[0].marginBottom);
+                    off += parseInt(this.css("marginTop")) + parseInt(this.css("marginBottom"));
                 return off;
             }
             // Set value
-            var height = (value - (this.offsetHeight - this.clientHeight)) + "px";
             this.each(function() {
-                this.style.height = height;
+                this.style.height = (value - (this.offsetHeight - this.clientHeight)) + "px";
             });
             return this;
         },
@@ -851,13 +847,13 @@
          */
         outerWidth: function(value) {
             // Value defaults to false
-            if(typeof value === "undefined")
+            if(value === undefined)
                 value = false;
             // Get Value
             if(typeof value === "boolean") {
                 var off = this[0].offsetWidth;
                 if (value === true)
-                    off += parseInt(this[0].style.marginLeft) + parseInt(this[0].style.marginRight);
+                    off += parseInt(this.css("marginLeft")) + parseInt(this.css("marginRight"));
                 return off;
             }
             // Set value
@@ -870,61 +866,60 @@
          * Gets/sets position of Q elements relative to the document
          */
         offset: function(pos) {
-            // Set position
-            if(typeof pos !== "undefined") {
-                this.each(function() {
-                    var qobj = Q(this), margin = {
-                        top: parseInt(qobj.css("marginTop")),
-                        left: parseInt(qobj.css("marginLeft"))
-                    };
-
-                    // Check if parsing succeeds
-                    for(var prop in margin) {
-                        if(!Q.isNumber(margin[prop]))
-                            margin[prop] = 0;
-                    }
-                    // Remove margin from position (margin not relevant). NOT FOR IE8
-                    for(prop in pos) {
-                        if(pos.hasOwnProperty(prop) && margin.hasOwnProperty(prop))
-                            pos[prop] = (pos[prop] - margin[prop]) + "px";
-                    }
-                    // Check if position should be changed
-                    if(qobj.css("position") === "static")
-                        pos["position"] = "absolute";
-                    if(pos.hasOwnProperty("top") || pos.hasOwnProperty("left"))
-                        qobj.css(pos);
-                });
-                return this;
-            }
             // Get position
-            pos = this[0].getBoundingClientRect();
-            return {
-                top:  pos["top"],
-                left: pos["left"]
-            };
+            if (pos === undefined) {
+                pos = this[0].getBoundingClientRect();
+                return {
+                    top:  pos.top,
+                    left: pos.left
+                };
+            }
+            // Set position
+            this.each(function() {
+                var qobj = Q(this);
+                // Remove margin from position (margin not relevant).
+                for(var prop in pos)
+                    pos[prop] = (pos[prop] - (parseFloat(qobj.css(prop)))) + "px";
+                // Check if position should be changed
+                if (qobj.css("position") === "static")
+                    pos.position = "absolute";
+                if (!pos.top || !pos.left)
+                    qobj.css(pos);
+            });
+            return this;
         },
         /**
          * Gets/sets position of Q elements relative to parent elements
          */
         position: function(pos) {
-            // Set position
-            if(typeof pos !== "undefined") {
-                for(var prop in pos) {
-                    if(typeof pos[prop] !== "undefined")
-                        delete pos[prop];
-                    else
-                        pos[prop] += "px";
-                }
-                this.css(pos);
-                return this;
-            }
             // Get position
-            return {
-                top:    this[0].offsetTop,
-                left:   this[0].offsetLeft,
-                bottom: this[0].offsetTop + this[0].offsetHeight,
-                right:  this[0].offsetLeft + this[0].offsetWidth
-            };
+            if(pos === undefined)
+                return {
+                    top:    this[0].offsetTop,
+                    left:   this[0].offsetLeft,
+                    bottom: this[0].offsetTop + this[0].offsetHeight,
+                    right:  this[0].offsetLeft + this[0].offsetWidth
+                };
+
+            // Set position
+            for(var prop in pos) {
+                if(pos[prop] !== undefined)
+                    delete pos[prop];
+                else
+                    pos[prop] += "px";
+            }
+            this.css(pos);
+            return this;
+        },
+
+        // Test Functions
+        height: function(value) {
+            if(value === "number") {
+                var padding = this.css("marginTop marginBottom"),
+                    height = this[0].clientHeight;
+                height -= parseInt(padding["marginTop"]) + parseInt(padding["marginBottom"]);
+                return height;
+            }
         },
         //</editor-fold>
 
@@ -939,7 +934,7 @@
             // If attr is a string
             if(typeof attr === "string") {
                 // If value is defined. Set value
-                if(typeof value !== "undefined") {
+                if(value !== undefined) {
                     var obj = {};
                     obj[attr] = value;
                     attr = obj;
@@ -1063,7 +1058,7 @@
             // If name is a string
             if(typeof name === "string") {
                 // If value is defined. Set value
-                if(typeof value !== "undefined") {
+                if(value !== undefined) {
                     var obj = {};
                     obj[name] = value;
                     name = obj;
@@ -1122,10 +1117,12 @@
         //</editor-fold>
     };
 
-    //<editor-fold desc="Polyfillls">
+    //<editor-fold desc="Functions">
     // Attach QLib alias "Q" to window
     if(!window.Q)
         window.Q = Q;
+    else if(console)
+        console.error("Could not define QLib. Global variable 'Q' is already defined");
 
     // Polyfills by Mozilla
     if(!Element.prototype.matches) {
@@ -1137,10 +1134,15 @@
             return matches[i] ? true : false;
         });
     }
-    if(!String.prototype.includes) {
-        String.prototype.includes = (String.prototype.contains || function() {
-            return String.prototype.indexOf.apply(this, arguments) !== -1;
-        });
+    //
+    function getStyle(elem) {
+        if (elem.ownerDocument.defaultView.opener)
+            return elem.ownerDocument.defaultView.getComputedStyle(elem, null);
+        return window.getComputedStyle(elem, null);
+    }
+    function camelCase(s) {
+        s = s == "float" ? "cssFloat" : s;
+        return s.replace(/(\-[a-z])/g, function(c){return c.toUpperCase().replace("-","");});
     }
     //</editor-fold>
 })();
