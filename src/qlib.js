@@ -177,10 +177,10 @@
         // Check if selector is a string
         else if (typeof selector === "string") {
             // Create element
-            if (selector.charAt(0) === "<") {
+            if (selector.charAt(0) === "<" && selector.charAt(selector.length - 1) === ">") {
                 var elem = document.createElement("div");
                 elem.innerHTML = selector;
-                this[0] = elem.firstChild;
+                this[0] = elem.removeChild(elem.firstChild);
                 this.length = 1;
             }
             else {
