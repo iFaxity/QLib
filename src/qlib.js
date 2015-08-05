@@ -183,7 +183,7 @@
                 this.length = 0;
                 while(n--) {
                     if (elem.childNodes[n].nodeType == 1) {
-                        this[this.length] = elem.removeChild(elem.childNodes[n]));
+                        this[this.length] = elem.removeChild(elem.childNodes[n]);
                         this.length++;
                     }
                 }
