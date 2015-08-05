@@ -180,8 +180,13 @@
             if (selector.charAt(0) === "<" && selector.charAt(selector.length - 1) === ">") {
                 var elem = document.createElement("div");
                 elem.innerHTML = selector;
-                this[0] = elem.removeChild(elem.firstChild);
-                this.length = 1;
+                this.length = 0;
+                while(n--) {
+                    if (elem.childNodes[n].nodeType == 1) {
+                        this[this.length] = elem.removeChild(elem.childNodes[n]));
+                        this.length++;
+                    }
+                }
             }
             else {
                 selector = document.querySelectorAll(selector);
@@ -280,7 +285,7 @@
         parent: function () {
             var nodes = [];
             this.each(function () {
-                if (!nodes.indexOf(this.parentNode) !== -1 && this.parentNode !== undefined)
+                if (parent && !nodes.indexOf(this.parentNode) !== -1)
                     nodes.push(this.parentNode);
             });
             // Return all matched nodes
@@ -297,10 +302,10 @@
             this.each(function () {
                 var parent = this.parentNode;
                 while (true) {
-                    if (parent == document)
+                    if (!parent || parent == document)
                         break;
                     // If parent already exists then don't add it and continue.
-                    else if (nodes.indexOf(parent) === -1 && parent !== undefined && parent.matches(selector))
+                    else if (parent && parent.matches(selector) && nodes.indexOf(parent) === -1)
                         nodes.push(parent);
                     // Next parent
                     parent = parent.parentNode;
@@ -321,10 +326,10 @@
                 var parent = this.parentNode;
                 while (true) {
                     // If selector matches then end loop. Or if element is the documentElement
-                    if (parent == doc || parent.matches(selector))
+                    if (!parent || parent == doc || parent.matches(selector))
                         break;
                     // If parent already exists then don't add it and continue.
-                    if (!nodes.indexOf(parent) !== -1 && parent !== undefined)
+                    if (!nodes.indexOf(parent) !== -1)
                         nodes.push(parent);
                     // Next parent
                     parent = parent.parentNode;
