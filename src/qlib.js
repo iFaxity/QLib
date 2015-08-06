@@ -1,7 +1,7 @@
 /* QLib the modern compressed Javascript framework for Web developers
  Copyright CodeCubed 2015. Created by Faxity, maintained by CodeCubed*/
 (function () {
-    //"use strict";
+    "use strict";
     // Support check
     if (!document.querySelector || !window.addEventListener)
         throw "This browser does not support QLib. Please use Chrome or Firefox.";
@@ -16,12 +16,13 @@
     var Q = function (selector) {
         return new QLib(selector);
     };
-
     /**
      * Get this QLibs version
      * @type {string}
      */
-    Q.version = "0.3.2";
+    Q.version = "0.3.3";
+
+    //<editor-fold desc="Ajax">
     /**
      * Sends an AJAX request to the requested URL
      * @param obj {string|Object|FormData} Settings object to apply
@@ -31,54 +32,55 @@
             url: "",
             method: "POST",
             async: true,
-            data: null,
             user: "",
             password: "",
-            success: null,
-            error: null
-        }, sendData = false, request = new XMLHttpRequest();
+            timeout: 0,
+            data: undefined,
+            success: undefined,
+            error: undefined
+        }, xhr = new XMLHttpRequest(), prop;
 
         // Override default settings
-        for (var key in obj) {
-            if (obj.hasOwnProperty(key) && settings.hasOwnProperty(key))
-                settings[key] = obj[key];
+        for (prop in obj) {
+            if (obj[prop] && settings[prop])
+                settings[prop] = obj[prop];
         }
 
         // Parse data
-        if (settings["data"] !== undefined && settings["data"] != null) {
-            if (typeof settings["data"] != "string" && !(settings["data"] instanceof FormData)) {
-                var list = [];
-                for (var prop in settings["data"]) {
-                    if (settings["data"].hasOwnProperty(prop))
-                        list.push(encodeURIComponent(prop) + "=" + encodeURIComponent(settings["data"][prop]));
-                }
-                settings["data"] = list.join("&");
+        if (settings.data && typeof settings.data !== "string" && settings.data.constructor !== FormData) {
+            var q = "";
+            for (prop in settings.data) {
+                if (settings.data[prop])
+                    q += encodeURIComponent(prop) + "=" + encodeURIComponent(settings.data[prop]) + "&";
             }
-            sendData = true;
+            settings.data = q.substring(0, q.length - 1);
         }
 
-        // If GET append query to url
-        if (sendData == true && settings["method"].toUpperCase() != "POST")
-            settings["url"] += "?" + settings["data"];
+        // If GET or PUT append query to url
+        if (settings.data && settings.method.toUpperCase() !== "POST")
+            settings.url += "?" + settings.data;
 
-        // Open the AJAX request
-        request.open(settings["method"].toUpperCase(), settings["url"], settings["async"], settings["user"], settings["password"]);
-        request.onreadystatechange = function () {
-            if (request.readyState != 4) return;
+        // Set timeout & open request
+        xhr.timeout = data.timeout;
+        xhr.open(settings["method"].toUpperCase(), settings["url"], settings["async"], settings["user"], settings["password"]);
+        // Add event
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState !== 4) return;
 
-            if (request.status == 200 && typeof settings["success"] == "function")
-                settings["success"](request.responseText);
-            else if (typeof settings["error"] == "function")
-                settings["error"](request.status, request.statusText);
+            if (xhr.status === 200 && typeof settings.success === "function")
+                settings.success.call(xhr, xhr.responseText);
+            else if (typeof settings.error === "function")
+                settings.error.call(xhr.status, xhr.statusText);
         };
 
         // If POST then url encode the data then send
-        if (sendData == true && settings["method"].toUpperCase() == "POST") {
-            request.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-            request.send(settings["data"]);
+        if (settings.data && settings["method"].toUpperCase() == "POST") {
+            xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+            xhr.send(settings["data"]);
         }
+        // Send GET or PUT request
         else
-            request.send();
+            xhr.send();
     };
     /**
      * Gets a parsed JSON from an url
@@ -87,7 +89,7 @@
      * @param data {string|Object|FormData} Data to send to server.
      */
     Q.getJSON = function (url, callback, data) {
-        if (url === undefined && callback === undefined)
+        if (!url && !callback)
             throw "Parameter Invalid in 'getJSON'. Parameters 'url' and 'data' cant be undefined.";
         Q.ajax({
             url: url,
@@ -107,7 +109,7 @@
      * @param callback {function} Callback to run when file has loaded.
      */
     Q.getFile = function (url, callback) {
-        if (url === undefined && callback === undefined)
+        if (!url && !callback)
             throw "Parameter Invalid in 'getFile'. Parameter 'url' and 'callback' cant be undefined.";
         Q.ajax({
             url: url,
@@ -120,6 +122,9 @@
             }
         });
     };
+    //</editor-fold>
+
+    //<editor-fold desc="Validators">
     /**
      * Checks if the specified object is a Number
      * @param n {*} Object to check
@@ -129,16 +134,23 @@
         return !isNaN(parseFloat(n)) && isFinite(n);
     };
     /**
-     * Checks if the specified object is an HTMLNode
+     * Checks if an object is a DOMNode
      * @param node {*} Object to check
      * @returns {boolean} True or False
      */
     Q.isNode = function (node) {
         return node && node.nodeType ? true : false;
     };
+    /**
+     * Checks if an object is a boolean
+     * @param b {*} Object to check
+     */
     Q.isBoolean = function (b) {
         return b === true || b === false;
     };
+    //</editor-fold>
+
+    //<editor-fold desc="Misc">
     /**
      * Used to extend multiple functions to QLib
      * @param obj {Object} An object with extensions in a key value pair.
@@ -163,6 +175,27 @@
     Q.ready = function (callback) {
         document.addEventListener("DOMContentLoaded", callback, false);
     };
+    /**
+     * Loops every instance of the object specified
+     * @param arr {Object|Array} Array to loop
+     * @param callback {function} Callback to call
+     */
+    Q.each = function (arr, callback) {
+        var i;
+        if(Q.isNumber(arr.length)) {
+            i = 0;
+            while (i < arr.length) {
+                // Call function with "index" argument
+                callback.call(arr[i], i);
+                i++;
+            }
+        }
+        else {
+            for(i in arr)
+                callback.call(arr[i], i);
+        }
+    };
+    //</editor-fold>
 
     /**
      * QLib internal object
@@ -176,18 +209,21 @@
             this.length = 0;
         // Check if selector is a string
         else if (typeof selector === "string") {
-            // Create element
+            // Create element(s) from string
             if (selector.charAt(0) === "<" && selector.charAt(selector.length - 1) === ">") {
                 var elem = document.createElement("div");
                 elem.innerHTML = selector;
+                n = elem.childNodes.length;
                 this.length = 0;
-                while(n--) {
+                // Loop all nodes and don't include textNodes
+                while (n--) {
                     if (elem.childNodes[n].nodeType == 1) {
                         this[this.length] = elem.removeChild(elem.childNodes[n]);
                         this.length++;
                     }
                 }
             }
+            // Get elements from global query
             else {
                 selector = document.querySelectorAll(selector);
                 n = this.length = selector.length;
@@ -262,15 +298,19 @@
             // Get siblings with the selector (if it's defined)
             if (typeof selector === "string")
                 callback = function () {
+                    if(!this.parentNode)
+                        return;
                     for (var sibling = this.parentNode.firstChild; sibling; sibling = sibling.nextSibling) {
-                        if (sibling.nodeType == 1 && sibling != this && sibling.matches(selector))
+                        if (sibling.nodeType === 1 && sibling !== this && sibling.matches(selector))
                             nodes.push(sibling);
                     }
                 };
             else
                 callback = function () {
+                    if(!this.parentNode)
+                        return;
                     for (var sibling = this.parentNode.firstChild; sibling; sibling = sibling.nextSibling) {
-                        if (sibling.nodeType == 1 && sibling != this)
+                        if (sibling.nodeType === 1 && sibling !== this)
                             nodes.push(sibling);
                     }
                 };
@@ -506,9 +546,9 @@
          */
         text: function (text) {
             // Set text
-            if (typeof text == "string") {
+            if (typeof text === "string") {
                 this.each(function () {
-                    if (this.textContent !== undefined)
+                    if (this.textContent)
                         this.textContent = text;
                     else
                         this.innerText = text;
@@ -524,7 +564,7 @@
          */
         html: function (html) {
             // Set html
-            if (typeof html == "string") {
+            if (typeof html === "string") {
                 this.each(function () {
                     this.innerHTML = html;
                 });
@@ -539,24 +579,25 @@
          */
         append: function (html) {
             var callback;
-            if (typeof html != "string") {
-                if (html instanceof QLib)
-                    html = html[0];
-                if (html.nodeType) {
-                    var node = html;
-                    callback = function (i) {
-                        if (i != 0)
-                            node = node.cloneNode(true);
-                        this.appendChild(node);
-                    };
-                }
-            }
-            else
+            // If parameter is a string
+            if (typeof html === "string")
                 callback = function () {
                     this.insertAdjacentHTML("beforeEnd", html);
                 };
-
-            if (typeof callback == "function")
+            // If parameter is an Array of nodes
+            else if (html.length)
+                callback = function () {
+                    var n = html.length;
+                    while(n--)
+                        this.appendChild(html[n].cloneNode(true));
+                };
+            // If parameter is a Node
+            else if(html.nodeType)
+                callback = function () {
+                    this.appendChild(html.cloneNode(true));
+                };
+            // If callback was defined then call it
+            if (callback)
                 this.each(callback);
             else
                 throw "Parameter 'html' invalid";
@@ -568,24 +609,25 @@
          */
         prepend: function (html) {
             var callback;
-            if (typeof html != "string") {
-                if (html instanceof QLib)
-                    html = html[0];
-                if (html.nodeType) {
-                    var node = html;
-                    callback = function (i) {
-                        if (i != 0)
-                            node = node.cloneNode(true);
-                        this.insertBefore(node, this.firstChild);
-                    };
-                }
-            }
-            else
+            // If parameter is a string
+            if (typeof html === "string")
                 callback = function () {
                     this.insertAdjacentHTML("afterBegin", html);
                 };
-
-            if (typeof callback == "function")
+            // If parameter is an Array of nodes
+            else if (html.length)
+                callback = function () {
+                    var n = html.length;
+                    while(n--)
+                        this.insertBefore(html[n].cloneNode(true), this.firstChild);
+                };
+            // If parameter is a Node
+            else if(html.nodeType)
+                callback = function () {
+                    this.insertBefore(html.cloneNode(true), this.firstChild);
+                };
+            // If callback was defined then call it
+            if (callback)
                 this.each(callback);
             else
                 throw "Parameter 'html' invalid";
@@ -598,24 +640,29 @@
          */
         before: function (html) {
             var callback;
-            if (typeof html != "string") {
-                if (html instanceof QLib)
-                    html = html[0];
-                if (html.nodeType) {
-                    var node = html;
-                    callback = function (i) {
-                        if (i != 0)
-                            node = node.cloneNode(true);
-                        this.parentNode.insertBefore(node, this);
-                    };
-                }
-            }
-            else
+            // If parameter is a string
+            if (typeof html === "string")
                 callback = function () {
-                    this.insertAdjacentHTML("beforeBegin", html);
+                    if(this.parentNode)
+                        this.insertAdjacentHTML("beforeBegin", html);
                 };
-
-            if (typeof callback == "function")
+            // If parameter is an Array of nodes
+            else if (html.length)
+                callback = function () {
+                    if(!this.parentNode)
+                        return;
+                    var n = html.length;
+                    while(n--)
+                        this.parentNode.insertBefore(html[n].cloneNode(true), this);
+                };
+            // If parameter is a Node
+            else if(html.nodeType)
+                callback = function () {
+                    if(this.parentNode)
+                        this.parentNode.insertBefore(html.cloneNode(true), this);
+                };
+            // If callback was defined then call it
+            if (callback)
                 this.each(callback);
             else
                 throw "Parameter 'html' invalid";
@@ -623,29 +670,34 @@
         },
         /**
          * Inserts content after all Q nodes
-         * @param html
+         * @param html {QLib|string|HTMLCollection|Node}
          * @returns {QLib}
          */
         after: function (html) {
             var callback;
-            if (typeof html != "string") {
-                if (html instanceof QLib)
-                    html = html[0];
-                if (html.nodeType) {
-                    var node = html;
-                    callback = function (i) {
-                        if (i != 0)
-                            node = node.cloneNode(true);
-                        this.parentNode.insertBefore(node, this.nextSibling);
-                    };
-                }
-            }
-            else
+            // If parameter is a string
+            if (typeof html === "string")
                 callback = function () {
-                    this.insertAdjacentHTML("afterEnd", html);
+                    if(this.parentNode)
+                        this.insertAdjacentHTML("afterEnd", html);
                 };
-
-            if (typeof callback == "function")
+            // If parameter is an Array of nodes
+            else if (html.length)
+                callback = function () {
+                    if(!this.parentNode)
+                        return;
+                    var n = html.length;
+                    while(n--)
+                        this.parentNode.insertBefore(html[n].cloneNode(true), this.nextSibling);
+                };
+            // If parameter is a Node
+            else if(html.nodeType)
+                callback = function () {
+                    if(this.parentNode)
+                        this.parentNode.insertBefore(html.cloneNode(true), this.nextSibling);
+                };
+            // If callback was defined then call it
+            if (callback)
                 this.each(callback);
             else
                 throw "Parameter 'html' invalid";
@@ -704,7 +756,7 @@
          */
         clone: function (deep) {
             // Overload for deep (default: true)
-            if (!Q.isBoolean(deep))
+            if (deep && !Q.isBoolean(deep))
                 deep = true;
             // Clone all nodes
             var list = [];
