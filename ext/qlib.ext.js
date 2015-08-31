@@ -6,7 +6,7 @@
 
 // QLib Cookie extension
 (function() {
-    if(!window.Q)
+    if(!window.$)
         throw "QLib not available. Initialize QLib before its plugins.";
     else if(navigator.cookieEnabled != true)
         throw "QLib cookie extension not available. This browser has cookies disabled.";
@@ -45,7 +45,7 @@
         }
     }
 
-    Q.cookie = function(name, value, expires) {
+    $.cookie = function(name, value, expires) {
         // Get cookie
         if(typeof name == "string") {
             if(value == undefined && Q.hasCookie(name))
@@ -73,7 +73,7 @@
         }
         document.cookie = cookieString;
     };
-    Q.hasCookie = function(name) {
+    $.hasCookie = function(name) {
         if(typeof name != "string")
             throw "Parameter Invalid in 'hasCookie'. Parameter 'name' needs to be a string.";
 
@@ -84,7 +84,7 @@
         }
         return true;
     };
-    Q.removeCookie = function(name) {
+    $.removeCookie = function(name) {
         var cookie;
         if(cookie = cookies[name])
             cookies[name].expires = "Thu, 01-Jan-1970 00:00:00 GMT";
@@ -123,7 +123,7 @@
 
 // Animate CSS extension. CSS file by Daniel Eden. Link: https://daneden.github.io/animate.css/
 (function() {
-    if(!window.Q)
+    if(!window.$)
         throw "QLib not available. Initialize QLib before its plugins.";
 
     // Add animate.css stylesheet
@@ -133,7 +133,7 @@
     // Handles animations
     var anim = function(animName) {
         this.each(function() {
-            var elem = Q(this);
+            var elem = $(this);
 
             if(elem.hasAttr("data-anim"))
                 elem.removeClass(elem.attr("data-anim"));
@@ -144,7 +144,7 @@
     };
 
     // Add prototype extensions
-    Q.extend({
+    $.extend({
         fadeIn: function() {
             anim.call(this, "fadeIn");
         },
@@ -160,7 +160,6 @@
 
 // Bootstrap JS file in QLib
 (function() {
-
     // Dropdown
     Q(".dropdown").on("click", "button, li", function() {
         var elem = Q(this);
@@ -196,4 +195,25 @@
 
 
     });
+})();
+
+// QLib Socket extension
+(function() {
+    if(!window.Q)
+        throw "QLib not available. Initialize QLib before its plugins.";
+    else if(!window.WebSocket)
+        throw "WebSockets not available on this browser!";
+
+    var socket = function() {
+
+    };
+    socket.prototype = {
+        open: "",
+        close: "",
+        on: "",
+        off: ""
+    };
+
+    if(!Q.socket)
+        Q.socket = socket;
 })();

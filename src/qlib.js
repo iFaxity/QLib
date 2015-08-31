@@ -1,10 +1,10 @@
 /* QLib the modern compressed Javascript framework for Web developers
  Copyright CodeCubed 2015. Created by Faxity, maintained by CodeCubed*/
-(function () {
+(function() {
     "use strict";
     // Support check
     if (!document.querySelector || !window.addEventListener)
-        throw "This browser does not support QLib. Please use Chrome or Firefox.";
+        throw "This browser does not support QLib. Please use latest Chrome or Firefox.";
 
     //<editor-fold desc="QLib Static Properties">
     /**
@@ -13,21 +13,26 @@
      * @returns {Q} Initialized Q object
      * @constructor
      */
-    var Q = function (selector) {
+    var Q = function(selector) {
         return new QLib(selector);
     };
     /**
      * Get this QLibs version
      * @type {string}
      */
-    Q.version = "0.3.3";
+    Q.version = "0.3.4";
+    /**
+     * Events by ID used in events functions
+     * @type {Array} Array of functions
+     */
+    Q.events = [];
 
     //<editor-fold desc="Ajax">
     /**
      * Sends an AJAX request to the requested URL
      * @param obj {string|Object|FormData} Settings object to apply
      */
-    Q.ajax = function (obj) {
+    Q.ajax = function(obj) {
         var settings = {
             url: "",
             method: "POST",
@@ -64,7 +69,7 @@
         xhr.timeout = data.timeout;
         xhr.open(settings["method"].toUpperCase(), settings["url"], settings["async"], settings["user"], settings["password"]);
         // Add event
-        xhr.onreadystatechange = function () {
+        xhr.onreadystatechange = function() {
             if (xhr.readyState !== 4) return;
 
             if (xhr.status === 200 && typeof settings.success === "function")
@@ -88,17 +93,17 @@
      * @param callback {function} Callback to run when JSON has been loaded and parsed.
      * @param data {string|Object|FormData} Data to send to server.
      */
-    Q.getJSON = function (url, callback, data) {
+    Q.getJSON = function(url, callback, data) {
         if (!url && !callback)
             throw "Parameter Invalid in 'getJSON'. Parameters 'url' and 'data' cant be undefined.";
         Q.ajax({
             url: url,
             method: "GET",
             data: data,
-            success: function (text) {
+            success: function(text) {
                 callback(JSON.parse(text));
             },
-            error: function (code, text) {
+            error: function(code, text) {
                 throw "Error in 'getJSON'. Error: " + code + " " + text;
             }
         });
@@ -108,16 +113,16 @@
      * @param url {string} URL location to file
      * @param callback {function} Callback to run when file has loaded.
      */
-    Q.getFile = function (url, callback) {
+    Q.getFile = function(url, callback) {
         if (!url && !callback)
             throw "Parameter Invalid in 'getFile'. Parameter 'url' and 'callback' cant be undefined.";
         Q.ajax({
             url: url,
             method: "GET",
-            success: function (text) {
+            success: function(text) {
                 callback(text);
             },
-            error: function (code, text) {
+            error: function(code, text) {
                 throw "Error in 'getFile'. Error: " + code + " " + text;
             }
         });
@@ -130,7 +135,7 @@
      * @param n {*} Object to check
      * @returns {boolean} True or False
      */
-    Q.isNumber = function (n) {
+    Q.isNumber = function(n) {
         return !isNaN(parseFloat(n)) && isFinite(n);
     };
     /**
@@ -138,41 +143,41 @@
      * @param node {*} Object to check
      * @returns {boolean} True or False
      */
-    Q.isNode = function (node) {
+    Q.isNode = function(node) {
         return node && node.nodeType ? true : false;
     };
     /**
-     * Checks if an object is a boolean
-     * @param b {*} Object to check
+     * Checks if an object is a plain object
+     * @param obj {*} Object to check
      */
-    Q.isBoolean = function (b) {
-        return b === true || b === false;
+    Q.isPlainObj = function(obj) {
+        return obj && typeof obj === "object" && obj.constructor == Object;
     };
     //</editor-fold>
 
     //<editor-fold desc="Misc">
     /**
-     * Used to extend multiple functions to QLib
+     * Used to extend the prototype of QLib
      * @param obj {Object} An object with extensions in a key value pair.
      */
-    Q.extend = function (obj) {
+    Q.extend = function(obj) {
         for (var key in obj) {
             if (obj[key])
-                Q.ex[key] = obj[key];
+                Q.fn[key] = obj[key];
         }
     };
     /**
      * Event that executes after the page has been loaded and parsed
      * @param callback {function} Callback to call
      */
-    Q.load = function (callback) {
+    Q.load = function(callback) {
         window.addEventListener("load", callback, false);
     };
     /**
      * Event that executes after the page has been loaded
      * @param callback {function} Callback to call
      */
-    Q.ready = function (callback) {
+    Q.ready = function(callback) {
         document.addEventListener("DOMContentLoaded", callback, false);
     };
     /**
@@ -180,9 +185,9 @@
      * @param arr {Object|Array} Array to loop
      * @param callback {function} Callback to call
      */
-    Q.each = function (arr, callback) {
+    Q.each = function(arr, callback) {
         var i;
-        if(Q.isNumber(arr.length)) {
+        if (Q.isNumber(arr.length)) {
             i = 0;
             while (i < arr.length) {
                 // Call function with "index" argument
@@ -191,9 +196,28 @@
             }
         }
         else {
-            for(i in arr)
+            for (i in arr)
                 callback.call(arr[i], i);
         }
+    };
+    /**
+     * Formats a string (ex. Q.format("{h} {w}", {h: "Hello", w: "World!"}))
+     * @param str {string} Input string containing "{}" in between the index to replace
+     * @param obj {Array|Object} Array or Object with properties
+     */
+    Q.format = function(str, obj) {
+        var prop;
+        if (typeof str !== "string")
+            throw "Param Invalid in 'format': The first parameter must be a string";
+        if (obj.constructor === Array) {
+            for (prop = 0; prop < obj.length; prop++)
+                str = str.replace("{" + prop + "}", obj[prop]);
+        }
+        else if (Q.isPlainObj) {
+            for (prop in obj)
+                str = str.replace("{" + prop + "}", obj[prop]);
+        }
+        return str;
     };
     //</editor-fold>
 
@@ -202,7 +226,7 @@
      * @param selector {string|Element|NodeList} CSS selector as string or HTML element(s)
      * @returns {QLib}
      */
-    var QLib = function (selector) {
+    var QLib = function(selector) {
         var n;
         // Check if selector is undefined, null or ""
         if (!selector)
@@ -260,26 +284,31 @@
     /**
      * QLib Extensions Prototype
      */
-    Q.ex = QLib.prototype = {
+    Q.fn = QLib.prototype = {
         //<editor-fold desc="Traversing">
         /**
-         * Gets the first Q nodes from this object
-         * @returns {Q}
+         * Gets the first Q node
          */
-        first: function () {
-            return Q(this[0]);
+        first: function() {
+            return Q(this.length > 1 ? this[0] : undefined);
+        },
+        /**
+         * Gets the last Q node
+         */
+        last: function() {
+            return Q(this.length > 1 ? this[this.length - 1] : undefined);
         },
         /**
          * Gets child elements from the first Q node
          * @param selector {string} CSS Selector
          */
-        children: function (selector) {
+        children: function(selector) {
             var nodes = [], callback;
             // Get children with the selector (if it's defined)
             if (typeof selector !== "string")
                 selector = "*";
             // Iterate all Q nodes
-            this.each(function () {
+            this.each(function() {
                 var children = this.childNodes;
                 for (var i = 0; i < children.length; i++) {
                     if (children[i].nodeType == 1 && children[i].matches(selector))
@@ -293,12 +322,12 @@
          * Gets siblings from all q elements
          * @param selector {string} CSS Selector
          */
-        siblings: function (selector) {
+        siblings: function(selector) {
             var nodes = [], callback;
             // Get siblings with the selector (if it's defined)
             if (typeof selector === "string")
-                callback = function () {
-                    if(!this.parentNode)
+                callback = function() {
+                    if (!this.parentNode)
                         return;
                     for (var sibling = this.parentNode.firstChild; sibling; sibling = sibling.nextSibling) {
                         if (sibling.nodeType === 1 && sibling !== this && sibling.matches(selector))
@@ -306,8 +335,8 @@
                     }
                 };
             else
-                callback = function () {
-                    if(!this.parentNode)
+                callback = function() {
+                    if (!this.parentNode)
                         return;
                     for (var sibling = this.parentNode.firstChild; sibling; sibling = sibling.nextSibling) {
                         if (sibling.nodeType === 1 && sibling !== this)
@@ -322,9 +351,9 @@
         /**
          * Gets the first parent of all Q nodes
          */
-        parent: function () {
+        parent: function() {
             var nodes = [];
-            this.each(function () {
+            this.each(function() {
                 if (parent && !nodes.indexOf(this.parentNode) !== -1)
                     nodes.push(this.parentNode);
             });
@@ -335,11 +364,11 @@
          * Gets parents until document of all Q nodes
          * @param selector {string} CSS Selector
          */
-        parents: function (selector) {
+        parents: function(selector) {
             var nodes = [];
             if (typeof selector !== "string")
                 selector = "*";
-            this.each(function () {
+            this.each(function() {
                 var parent = this.parentNode;
                 while (true) {
                     if (!parent || parent == document)
@@ -358,11 +387,11 @@
          * Gets parents until a certain selector
          * @param selector {string} CSS Selector
          */
-        parentsUntil: function (selector) {
+        parentsUntil: function(selector) {
             var nodes = [], doc = document.documentElement;
             if (selector === undefined)
                 selector = "*";
-            this.each(function () {
+            this.each(function() {
                 var parent = this.parentNode;
                 while (true) {
                     // If selector matches then end loop. Or if element is the documentElement
@@ -383,7 +412,7 @@
          * @param index {int} Index of node
          * @param count {int} Counter of how many nodes get after index
          * */
-        eq: function (index, count) {
+        eq: function(index, count) {
             // Throw error if index is not an integer
             if (count && !Q.isNumber(index))
                 throw "Parameter invalid in 'eq'. parameter 'index' has to be an integer";
@@ -406,7 +435,7 @@
          * Iterates all the Q nodes
          * @param callback {function} Function to execute every iteration
          */
-        each: function (callback) {
+        each: function(callback) {
             var i = 0;
             while (i < this.length) {
                 // Call function with "index" argument
@@ -418,12 +447,12 @@
          * Finds the specified node with a CSS selector
          * @param selector {string} CSS Selector
          */
-        find: function (selector) {
+        find: function(selector) {
             if (typeof selector != "string")
                 throw "Parameter invalid in 'find'. parameter 'selector' is not a string.";
             var nodes = [];
             // Iterate all Q nodes
-            this.each(function () {
+            this.each(function() {
                 var nodeList = this.querySelectorAll(selector);
                 for (var i = 0; i < nodeList.length; i++)
                     nodes.push(nodeList[i]);
@@ -435,7 +464,7 @@
          * Filters all the Q nodes with a selector
          * @param selector {string} CSS Selector
          */
-        filter: function (selector) {
+        filter: function(selector) {
             var nodes = [];
             if (typeof selector === "string") {
                 for (var i = 0; i < this.length; i++) {
@@ -455,41 +484,41 @@
          * @param selector {string|function} CSS selector or overload callback function
          * @param callback {function} Callback for when event fires
          */
-        on: function (eventType, selector, callback) {
+        on: function(eventType, selector, callback, one) {
             var handler;
             if (typeof eventType !== "string")
                 throw "Parameter invalid in 'on'. Parameter 'eventType' has to be a string.";
+
+            // If selector is defined
+            if (typeof selector === "string" && typeof callback === "function")
+                handler = function(e) {
+                    var target = e.target;
+                    debugger;
+                    for (; target && target !== this; target = target.parentNode) {
+                        // Loop parent nodes from the target to the delegation elements
+                        if (target.matches(selector)) {
+                            callback.call(target, e);
+                            break;
+                        }
+                    }
+                };
+            // Regular event (selector is function callback)
+            else if (typeof selector === "function")
+                handler = selector;
+            // Error
+            else
+                throw "Parameter invalid in 'on'. Parameter 'selector' has to be defined.";
 
             // Get all event types and add them all
             var types = eventType.split(" ");
             for (var i = 0; i < types.length; i++) {
                 var type = types[i];
-                // If selector is defined
-                if (typeof selector == "string" && typeof callback == "function")
-                    handler = function (e) {
-                        var target = e.target;
-                        for (; target && target != this; target = target.parentNode) {
-                            // Loop parent nodes from the target to the delegation elements
-                            if (target.matches(selector)) {
-                                callback.call(target, e);
-                                break;
-                            }
-                        }
-                    };
-                // Regular event (selector is function callback)
-                else if (typeof selector == "function")
-                    handler = selector;
-                // Error
-                else
-                    throw "Parameter invalid in 'on'. Parameter 'selector' has to be defined.";
-
                 // Add listener to all elements in this object
-                this.each(function () {
+                this.each(function() {
                     if (this.addEventListener)
                         this.addEventListener(type, handler, false);
                 });
             }
-
             return this;
         },
         /**TODO: Fix this function
@@ -498,28 +527,29 @@
          * @param selector {string|function} CSS selector or overload callback function
          * @param callback {function} Callback for when event fires
          */
-        one: function (eventType, selector, callback) {
+        one: function(eventType, selector, callback) {
+            this.on(eventType, selector, callback, true);
             return this;
         },
         /**
          * Removes an 'on' event
          * @param eventType {string} Name of event
          */
-        off: function (eventType) {
+        off: function(eventType) {
             return this;
         },
         /**
          * Trigger event the first Q node
          * @param eventType {string} Event type name
          */
-        trigger: function (eventType) {
+        trigger: function(eventType) {
             if (typeof eventType !== "string")
                 throw "Parameter Invalid in 'trigger'. Parameter 'eventType' has to be a string.";
             else if (this.length > 0) {
                 var event;
                 // Initialize event
                 if (typeof window.Event === "function")
-                    event = new Event(eventType, {"bubbles": true, "cancelable": true});
+                    event = new Event(eventType, {bubbles: true, cancelable: true});
                 // Leagacy support
                 else if (document.createEvent) {
                     event = document.createEvent("HTMLEvents");
@@ -533,7 +563,7 @@
         /**
          * Focuses on the first Q node
          */
-        focus: function () {
+        focus: function() {
             this[0].focus();
         },
         //</editor-fold>
@@ -544,10 +574,10 @@
          * Gets/Sets the text of the first elements
          * @returns {string|object} Text of the first element or this Q object
          */
-        text: function (text) {
+        text: function(text) {
             // Set text
             if (typeof text === "string") {
-                this.each(function () {
+                this.each(function() {
                     if (this.textContent)
                         this.textContent = text;
                     else
@@ -562,10 +592,10 @@
          * Gets the html of the first elements or sets the Html on all elements
          * @param html {string} Html to set to the elements
          */
-        html: function (html) {
+        html: function(html) {
             // Set html
             if (typeof html === "string") {
-                this.each(function () {
+                this.each(function() {
                     this.innerHTML = html;
                 });
                 return this;
@@ -577,23 +607,23 @@
          * Appends html or a Node to Q elements
          * @param html {string|Node} Html or Node to append
          */
-        append: function (html) {
+        append: function(html) {
             var callback;
             // If parameter is a string
             if (typeof html === "string")
-                callback = function () {
+                callback = function() {
                     this.insertAdjacentHTML("beforeEnd", html);
                 };
             // If parameter is an Array of nodes
             else if (html.length)
-                callback = function () {
+                callback = function() {
                     var n = html.length;
-                    while(n--)
+                    while (n--)
                         this.appendChild(html[n].cloneNode(true));
                 };
             // If parameter is a Node
-            else if(html.nodeType)
-                callback = function () {
+            else if (html.nodeType)
+                callback = function() {
                     this.appendChild(html.cloneNode(true));
                 };
             // If callback was defined then call it
@@ -607,23 +637,23 @@
          * Prepends html a Node to Q elements
          * @param html {string|Node} Html or Node to prepend
          */
-        prepend: function (html) {
+        prepend: function(html) {
             var callback;
             // If parameter is a string
             if (typeof html === "string")
-                callback = function () {
+                callback = function() {
                     this.insertAdjacentHTML("afterBegin", html);
                 };
             // If parameter is an Array of nodes
             else if (html.length)
-                callback = function () {
+                callback = function() {
                     var n = html.length;
-                    while(n--)
+                    while (n--)
                         this.insertBefore(html[n].cloneNode(true), this.firstChild);
                 };
             // If parameter is a Node
-            else if(html.nodeType)
-                callback = function () {
+            else if (html.nodeType)
+                callback = function() {
                     this.insertBefore(html.cloneNode(true), this.firstChild);
                 };
             // If callback was defined then call it
@@ -638,27 +668,27 @@
          * @param html
          * @returns {QLib}
          */
-        before: function (html) {
+        before: function(html) {
             var callback;
             // If parameter is a string
             if (typeof html === "string")
-                callback = function () {
-                    if(this.parentNode)
+                callback = function() {
+                    if (this.parentNode)
                         this.insertAdjacentHTML("beforeBegin", html);
                 };
             // If parameter is an Array of nodes
             else if (html.length)
-                callback = function () {
-                    if(!this.parentNode)
+                callback = function() {
+                    if (!this.parentNode)
                         return;
                     var n = html.length;
-                    while(n--)
+                    while (n--)
                         this.parentNode.insertBefore(html[n].cloneNode(true), this);
                 };
             // If parameter is a Node
-            else if(html.nodeType)
-                callback = function () {
-                    if(this.parentNode)
+            else if (html.nodeType)
+                callback = function() {
+                    if (this.parentNode)
                         this.parentNode.insertBefore(html.cloneNode(true), this);
                 };
             // If callback was defined then call it
@@ -673,27 +703,27 @@
          * @param html {QLib|string|HTMLCollection|Node}
          * @returns {QLib}
          */
-        after: function (html) {
+        after: function(html) {
             var callback;
             // If parameter is a string
             if (typeof html === "string")
-                callback = function () {
-                    if(this.parentNode)
+                callback = function() {
+                    if (this.parentNode)
                         this.insertAdjacentHTML("afterEnd", html);
                 };
             // If parameter is an Array of nodes
             else if (html.length)
-                callback = function () {
-                    if(!this.parentNode)
+                callback = function() {
+                    if (!this.parentNode)
                         return;
                     var n = html.length;
-                    while(n--)
+                    while (n--)
                         this.parentNode.insertBefore(html[n].cloneNode(true), this.nextSibling);
                 };
             // If parameter is a Node
-            else if(html.nodeType)
-                callback = function () {
-                    if(this.parentNode)
+            else if (html.nodeType)
+                callback = function() {
+                    if (this.parentNode)
                         this.parentNode.insertBefore(html.cloneNode(true), this.nextSibling);
                 };
             // If callback was defined then call it
@@ -706,8 +736,8 @@
         /**
          * Clears all Q nodes content
          */
-        clear: function () {
-            this.each(function () {
+        clear: function() {
+            this.each(function() {
                 var node = this;
                 while (node.firstChild)
                     node.removeChild(node.firstChild);
@@ -718,9 +748,9 @@
          * Gets/Sets value of an input element
          * @param value {*} Value to set
          */
-        val: function (value) {
+        val: function(value) {
             // Get value
-            if (value == undefined) {
+            if (!value) {
                 var elem = this[0];
                 if (elem.nodeName !== "input")
                     return "";
@@ -730,7 +760,7 @@
                     return elem.value;
             }
             // Set value
-            this.each(function () {
+            this.each(function() {
                 if (this.nodeName === "input") {
                     if (this.type === "checkbox" || this.type === "radio")
                         this.checked = value;
@@ -743,8 +773,8 @@
         /**
          * Removes all Q nodes
          */
-        remove: function () {
-            this.each(function () {
+        remove: function() {
+            this.each(function() {
                 if (this.parentNode)
                     this.parentNode.removeChild(this);
             });
@@ -754,13 +784,13 @@
          * @param deep {boolean} If childNodes should be copied
          * @returns {Q}
          */
-        clone: function (deep) {
+        clone: function(deep) {
             // Overload for deep (default: true)
-            if (deep && !Q.isBoolean(deep))
+            if (typeof deep === "boolean")
                 deep = true;
             // Clone all nodes
             var list = [];
-            this.each(function () {
+            this.each(function() {
                 list.push(this.cloneNode(deep));
             });
             // New cloned node
@@ -772,8 +802,8 @@
         /**
          * Shows all Q elements
          */
-        show: function () {
-            this.each(function () {
+        show: function() {
+            this.each(function() {
                 this.style.display = "block";
             });
             return this;
@@ -781,8 +811,8 @@
         /**
          * Hides all Q elements
          */
-        hide: function () {
-            this.each(function () {
+        hide: function() {
+            this.each(function() {
                 this.style.display = "none";
             });
             return this;
@@ -793,16 +823,16 @@
          * @param val {string} Value of css property. Only if name is string
          * @returns {string} Returns value of style property. Only if parameter is a string.
          */
-        css: function (name, val) {
+        css: function(name, val) {
             // Check if object or just one entry
-            if (name === undefined)
+            if (!name)
                 throw "Parameter invalid in 'css'. Parameter 'name' is undefined.";
 
             // If getting a value or setting one.
             if (typeof name === "string") {
                 // Get a value
                 var obj = {};
-                if (val === undefined)
+                if (!val)
                     return getStyle(this[0])[camelCase(name)];
                 // Set value
                 else {
@@ -813,8 +843,8 @@
             // If obj is an object then set values
             for (var prop in name) {
                 prop = camelCase(prop);
-                this.each(function () {
-                    if (!this.style[prop])
+                this.each(function() {
+                    if (this.style.hasOwnProperty(prop))
                         this.style[prop] = name[prop];
                 });
             }
@@ -825,9 +855,9 @@
          * @param value {boolean} Adds margin to the result
          * @returns {number} Height in pixels
          */
-        outerHeight: function (value) {
+        outerHeight: function(value) {
             // Value defaults to false
-            if (value === undefined)
+            if (!value)
                 value = false;
             // Get Value
             if (typeof value === "boolean") {
@@ -837,7 +867,7 @@
                 return off;
             }
             // Set value
-            this.each(function () {
+            this.each(function() {
                 this.style.height = (value - (this.offsetHeight - this.clientHeight)) + "px";
             });
             return this;
@@ -847,9 +877,9 @@
          * @param value {boolean} Adds margin to the result
          * @returns {number} Width in pixels
          */
-        outerWidth: function (value) {
+        outerWidth: function(value) {
             // Value defaults to false
-            if (value === undefined)
+            if (!value)
                 value = false;
             // Get Value
             if (typeof value === "boolean") {
@@ -859,7 +889,7 @@
                 return off;
             }
             // Set value
-            this.each(function () {
+            this.each(function() {
                 this.style.width = (value - (this.offsetWidth - this.clientWidth)) + "px";
             });
             return this;
@@ -867,9 +897,9 @@
         /**
          * Gets/sets position of Q elements relative to the document
          */
-        offset: function (pos) {
+        offset: function(pos) {
             // Get position
-            if (pos === undefined) {
+            if (!pos) {
                 pos = this[0].getBoundingClientRect();
                 return {
                     top: pos.top,
@@ -877,7 +907,7 @@
                 };
             }
             // Set position
-            this.each(function () {
+            this.each(function() {
                 var qobj = Q(this);
                 // Remove margin from position (margin not relevant).
                 for (var prop in pos)
@@ -893,9 +923,9 @@
         /**
          * Gets/sets position of Q elements relative to parent elements
          */
-        position: function (pos) {
+        position: function(pos) {
             // Get position
-            if (pos === undefined)
+            if (!pos)
                 return {
                     top: this[0].offsetTop,
                     left: this[0].offsetLeft,
@@ -904,7 +934,7 @@
                 };
             // Set position
             for (var prop in pos) {
-                if (pos[prop] !== undefined)
+                if (pos[prop])
                     delete pos[prop];
                 else
                     pos[prop] += "px";
@@ -921,11 +951,11 @@
          * @param value {*} Attribute value. Only if attr is a string
          * @returns {Q|string} Attribute value or this Q object
          */
-        attr: function (attr, value) {
+        attr: function(attr, value) {
             // If attr is a string
             if (typeof attr === "string") {
                 // If value is defined. Set value
-                if (value !== undefined) {
+                if (value) {
                     var obj = {};
                     obj[attr] = value;
                     attr = obj;
@@ -936,8 +966,8 @@
             }
             // Set values
             for (var prop in attr) {
-                this.each(function () {
-                    if (attr.hasOwnProperty(prop))
+                this.each(function() {
+                    if (prop in attr)
                         this.setAttribute(prop, attr[prop]);
                 });
             }
@@ -948,11 +978,11 @@
          * @param attr {string} Attribute name
          * @returns {Q} This Q object
          */
-        removeAttr: function (attr) {
+        removeAttr: function(attr) {
             if (typeof attr !== "string")
                 throw "Parameter 'attr' invalid";
             var attrs = attr.split(" ");
-            this.each(function () {
+            this.each(function() {
                 for (var i = 0; i < attrs.length; i++) {
                     if (this.hasAttribute(attrs[i]))
                         this.removeAttribute(attrs[i]);
@@ -965,7 +995,7 @@
          * @param attr {string} Attribute name
          * @returns {boolean} True or False
          */
-        hasAttr: function (attr) {
+        hasAttr: function(attr) {
             if (typeof attr !== "string")
                 throw "Parameter 'attr' invalid";
             var attrs = attr.split(" ");
@@ -980,11 +1010,11 @@
          * @param className {string|Object} Class name or object
          * @returns {Q}
          */
-        addClass: function (className) {
+        addClass: function(className) {
             if (typeof className !== "string")
                 throw "Parameter invalid in 'addClass'. parameter 'className' is not a string.";
             var classNames = className.split(" ");
-            this.each(function () {
+            this.each(function() {
                 var classes = this.className.split(" ");
                 // Check if we should loop
                 if (classes.length < 1 || classNames.length < 1)
@@ -1006,11 +1036,11 @@
          * Removes a class/classes from a set of classes
          * @param className {string} Class/classes to remove
          */
-        removeClass: function (className) {
+        removeClass: function(className) {
             if (typeof className !== "string")
                 throw "Parameter invalid in 'removeClass'. parameter 'className' is not a string.";
             var classNames = className.split(" ");
-            this.each(function () {
+            this.each(function() {
                 var classes = this.className.split(" ");
                 // Remove every entry in Q elements
                 for (var i = 0; i < classNames.length; i++) {
@@ -1028,7 +1058,7 @@
          * @param className {string} Class/classes to search for
          * @returns {boolean} True or False
          */
-        hasClass: function (className) {
+        hasClass: function(className) {
             if (typeof className !== "string")
                 return false;
             var classNames = className.split(" ");
@@ -1039,17 +1069,18 @@
                         return true;
                 }
             }
+            return false;
         },
         /**
          * Get/Set data attributes
          * @param name {string|*} Name of attribute to get/set or object with properties to set.
          * @param value {number|boolean|} Value to set. Only if 'name' is string.
          */
-        data: function (name, value) {
+        data: function(name, value) {
             // If name is a string
             if (typeof name === "string") {
                 // If value is defined. Set value
-                if (value !== undefined) {
+                if (value) {
                     var obj = {};
                     obj[name] = value;
                     name = obj;
@@ -1068,8 +1099,8 @@
             }
             // Set values
             for (var prop in name) {
-                this.each(function () {
-                    if (name.hasOwnProperty(prop))
+                this.each(function() {
+                    if (prop in name)
                         this.setAttribute("data-" + prop, name[prop]);
                 });
             }
@@ -1079,11 +1110,11 @@
          * Removes a data attribute
          * @param name {string} Data to remove
          */
-        removeData: function (name) {
+        removeData: function(name) {
             if (typeof name !== "string")
                 throw "Parameter 'name' invalid";
             name = "data-" + name;
-            this.each(function () {
+            this.each(function() {
                 if (this.hasAttribute(name))
                     this.removeAttribute(name);
             });
@@ -1094,7 +1125,7 @@
          * @param name {string} Data to check
          * @returns {boolean} True or False
          */
-        hasData: function (name) {
+        hasData: function(name) {
             if (typeof name !== "string")
                 throw "Parameter 'name' invalid";
             var names = name.split(" ");
@@ -1108,17 +1139,22 @@
         //</editor-fold>
     };
 
+    var lastEvent;
+
     //<editor-fold desc="Functions">
     // Attach QLib alias "Q" to window
+    // If jquery is unavailable add it there too
+    if (!window.$)
+        window.$ = window.jQuery = Q;
     if (!window.Q)
         window.Q = Q;
-    else if (console)
-        console.error("Could not define QLib. Global variable 'Q' is already defined");
+    else
+        throw "Could not define QLib. Global variables are already defined.";
 
     // Polyfills by Mozilla
     if (!Element.prototype.matches) {
         Element.prototype.matches = (Element.prototype.matchesSelector || Element.prototype.webkitMatchesSelector ||
-        Element.prototype.mozMatchesSelector || Element.prototype.msMatchesSelector || Element.prototype.oMatchesSelector || function (selector) {
+        Element.prototype.mozMatchesSelector || Element.prototype.msMatchesSelector || Element.prototype.oMatchesSelector || function(selector) {
             var matches = (this.document || this.ownerDocument).querySelectorAll(selector), i = 0;
             while (matches[i] && matches[i] !== this)
                 i++;
@@ -1131,13 +1167,11 @@
             return elem.ownerDocument.defaultView.getComputedStyle(elem, null);
         return window.getComputedStyle(elem, null);
     }
-
     function camelCase(s) {
         s = s == "float" ? "cssFloat" : s;
-        return s.replace(/(\-[a-z])/g, function (c) {
+        return s.replace(/(\-[a-z])/g, function(c) {
             return c.toUpperCase().replace("-", "");
         });
     }
-
     //</editor-fold>
 })();

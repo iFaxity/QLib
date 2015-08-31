@@ -1,67 +1,32 @@
-<!DOCTYPE html>
-<html>
-<head lang="en">
-    <meta charset="UTF-8">
-    <title>CeMS | MCE test</title>
-    <style>
-        div {
-            display: block;
-            overflow: visible;
-        }
-
-        #target {
-			background: blue;
-			width: 100%;
-			height: 300px;
-		}
-		
-		#target2 {
-			background: red;
-			width: 100%;
-			height: 250px;
-		}
-
-        #target3 {
-            background: green;
-            width: 100%;
-            height: 250px;
-        }
-    </style>
-</head>
-<body>
-    <div id="target">
-		<a>I am target 1</a>
-	</div>
-	
-    <div id="target2" class="lel">
-		<p>I am target 2</p>
-	</div>
-
-    <div id="target3" class="lel toplel">
-        <a>I am target 3</a>
-    </div>
-
-    <h2 id="heading">I'm a heading</h2>
-
-    <button id="ajax-btn">Click me pls</button>
-    <span id="ajax-div" style="display: block; border: 1px solid black; height: 100px;">Hello</span>
-</body>
-	<script src="/src/qlib.js"></script>
-    <script src="/ext/qlib.ext.js"></script>
-    <script>
-        Q.ready(function() {
-            var div = Q(document.getElementsByTagName("div"));
-            div.on("click", "a", function() {
-                Q(this).append("<h2>Hel</h2>");
-            });
-
-            Q("#ajax-btn").on("click", function() {
-                var heading = Q("#heading");
-                if(heading.hasClass("fadeOut"))
-                    heading.fadeIn();
-                else
-                    heading.fadeOut();
-            });
-        });
-    </script>
-</html>
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>CeMS | MCE test</title><style>div {
+   display: block;
+   overflow: visible;
+}
+#target {
+   background: blue;
+   width: 100%;
+   height: 300px;
+}
+#target2 {
+   background: red;
+   width: 100%;
+   height: 250px;
+}
+#target3 {
+   background: green;
+   width: 100%;
+   height: 250px;
+}</style></head><body><div id="target"><a>I am target 1</a></div><div id="target2" class="lel"><p>I am target 2</p></div><div id="target3" class="lel toplel"><a>I am target 3</a></div><h2 id="heading">I'm a heading</h2><button id="ajax-btn">Click me pls</button><span id="ajax-div" style="display: block; border: 1px solid black; height: 100px;">Hello</span><!-- Scripts put in the bottom--><script src="/src/qlib.js"></script><script src="/ext/qlib.ext.js"></script><script>Q.ready(function() {
+    var div = Q(document.getElementsByTagName("div"));
+    div.one("click", "a", function() {
+        debugger;
+        Q(this).append("<h2>Hel</h2>");
+    });
+   Q("#ajax-btn").on("click", function() {
+       var heading = Q("#heading");
+       if(heading.hasClass("fadeOut"))
+           heading.fadeIn();
+       else
+           heading.fadeOut();
+   });
+});</script></body></html>
