@@ -4,7 +4,7 @@
     "use strict";
     // Support check
     if (!document.querySelector || !window.addEventListener)
-        throw "This browser does not support QLib. Please use Chrome or Firefox.";
+        throw "This browser does not support QLib. Please use latest Chrome or Firefox.";
 
     //<editor-fold desc="QLib Static Properties">
     /**
@@ -20,7 +20,12 @@
      * Get this QLibs version
      * @type {string}
      */
-    Q.version = "0.3.3";
+    Q.version = "0.3.4";
+    /**
+     * Events by ID used in events functions
+     * @type {Array} Array of functions
+     */
+    Q.events = [];
 
     //<editor-fold desc="Ajax">
     /**
@@ -146,13 +151,20 @@
      * @param b {*} Object to check
      */
     Q.isBoolean = function (b) {
-        return b === true || b === false;
+        return b && (b === true || b === false);
+    };
+    /**
+     * Checks if an object is a plain object
+     * @param obj {*} Object to check
+     */
+    Q.isObj = function(obj) {
+        return obj && typeof obj === "object" && obj.constructor == Object;
     };
     //</editor-fold>
 
     //<editor-fold desc="Misc">
     /**
-     * Used to extend multiple functions to QLib
+     * Used to extend the prototype of QLib
      * @param obj {Object} An object with extensions in a key value pair.
      */
     Q.extend = function (obj) {
@@ -194,6 +206,25 @@
             for(i in arr)
                 callback.call(arr[i], i);
         }
+    };
+    /**
+     * Formats a string (ex. Q.format("{h} {w}", {h: "Hello", w: "World!"}))
+     * @param str {string} Input string containing "{}" in between the index to replace
+     * @param obj {Array|Object} Array or Object with properties
+     */
+    Q.format = function (str, obj) {
+        var prop;
+        if(typeof str !== "string")
+            throw "Param Invalid in 'format': The first parameter must be a string";
+        if(obj.constructor === Array) {
+            for(prop = 0; prop < obj.length; prop++)
+                str = str.replace("{" + prop + "}", obj[prop]);
+        }
+        else if(Q.isObj) {
+            for (prop in obj)
+                str = str.replace("{" + prop + "}", obj[prop]);
+        }
+        return str;
     };
     //</editor-fold>
 
@@ -465,10 +496,10 @@
             for (var i = 0; i < types.length; i++) {
                 var type = types[i];
                 // If selector is defined
-                if (typeof selector == "string" && typeof callback == "function")
-                    handler = function (e) {
+                if (typeof selector === "string" && typeof callback === "function")
+                    handler = function(e) {
                         var target = e.target;
-                        for (; target && target != this; target = target.parentNode) {
+                        for (; target && target !== this; target = target.parentNode) {
                             // Loop parent nodes from the target to the delegation elements
                             if (target.matches(selector)) {
                                 callback.call(target, e);
@@ -477,15 +508,15 @@
                         }
                     };
                 // Regular event (selector is function callback)
-                else if (typeof selector == "function")
+                else if (typeof selector === "function")
                     handler = selector;
                 // Error
                 else
                     throw "Parameter invalid in 'on'. Parameter 'selector' has to be defined.";
 
                 // Add listener to all elements in this object
-                this.each(function () {
-                    if (this.addEventListener)
+                this.each(function() {
+                    if(this.addEventListener)
                         this.addEventListener(type, handler, false);
                 });
             }
@@ -519,7 +550,7 @@
                 var event;
                 // Initialize event
                 if (typeof window.Event === "function")
-                    event = new Event(eventType, {"bubbles": true, "cancelable": true});
+                    event = new Event(eventType, {bubbles: true, cancelable: true});
                 // Leagacy support
                 else if (document.createEvent) {
                     event = document.createEvent("HTMLEvents");
@@ -533,7 +564,7 @@
         /**
          * Focuses on the first Q node
          */
-        focus: function () {
+        focus: function() {
             this[0].focus();
         },
         //</editor-fold>
@@ -720,7 +751,7 @@
          */
         val: function (value) {
             // Get value
-            if (value == undefined) {
+            if (!value) {
                 var elem = this[0];
                 if (elem.nodeName !== "input")
                     return "";
@@ -795,14 +826,14 @@
          */
         css: function (name, val) {
             // Check if object or just one entry
-            if (name === undefined)
+            if (!name)
                 throw "Parameter invalid in 'css'. Parameter 'name' is undefined.";
 
             // If getting a value or setting one.
             if (typeof name === "string") {
                 // Get a value
                 var obj = {};
-                if (val === undefined)
+                if (!val)
                     return getStyle(this[0])[camelCase(name)];
                 // Set value
                 else {
@@ -814,7 +845,7 @@
             for (var prop in name) {
                 prop = camelCase(prop);
                 this.each(function () {
-                    if (!this.style[prop])
+                    if (this.style.hasOwnProperty(prop))
                         this.style[prop] = name[prop];
                 });
             }
@@ -827,7 +858,7 @@
          */
         outerHeight: function (value) {
             // Value defaults to false
-            if (value === undefined)
+            if (!value)
                 value = false;
             // Get Value
             if (typeof value === "boolean") {
@@ -849,7 +880,7 @@
          */
         outerWidth: function (value) {
             // Value defaults to false
-            if (value === undefined)
+            if (!value)
                 value = false;
             // Get Value
             if (typeof value === "boolean") {
@@ -869,7 +900,7 @@
          */
         offset: function (pos) {
             // Get position
-            if (pos === undefined) {
+            if (!pos) {
                 pos = this[0].getBoundingClientRect();
                 return {
                     top: pos.top,
@@ -895,7 +926,7 @@
          */
         position: function (pos) {
             // Get position
-            if (pos === undefined)
+            if (!pos)
                 return {
                     top: this[0].offsetTop,
                     left: this[0].offsetLeft,
@@ -904,7 +935,7 @@
                 };
             // Set position
             for (var prop in pos) {
-                if (pos[prop] !== undefined)
+                if (pos[prop])
                     delete pos[prop];
                 else
                     pos[prop] += "px";
@@ -925,7 +956,7 @@
             // If attr is a string
             if (typeof attr === "string") {
                 // If value is defined. Set value
-                if (value !== undefined) {
+                if (value) {
                     var obj = {};
                     obj[attr] = value;
                     attr = obj;
@@ -937,7 +968,7 @@
             // Set values
             for (var prop in attr) {
                 this.each(function () {
-                    if (attr.hasOwnProperty(prop))
+                    if (prop in attr)
                         this.setAttribute(prop, attr[prop]);
                 });
             }
@@ -1039,6 +1070,7 @@
                         return true;
                 }
             }
+            return false;
         },
         /**
          * Get/Set data attributes
@@ -1049,7 +1081,7 @@
             // If name is a string
             if (typeof name === "string") {
                 // If value is defined. Set value
-                if (value !== undefined) {
+                if (value) {
                     var obj = {};
                     obj[name] = value;
                     name = obj;
@@ -1069,7 +1101,7 @@
             // Set values
             for (var prop in name) {
                 this.each(function () {
-                    if (name.hasOwnProperty(prop))
+                    if (prop in name)
                         this.setAttribute("data-" + prop, name[prop]);
                 });
             }

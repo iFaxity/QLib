@@ -160,7 +160,6 @@
 
 // Bootstrap JS file in QLib
 (function() {
-
     // Dropdown
     Q(".dropdown").on("click", "button, li", function() {
         var elem = Q(this);
@@ -196,4 +195,25 @@
 
 
     });
+})();
+
+// QLib Socket extension
+(function() {
+    if(!window.Q)
+        throw "QLib not available. Initialize QLib before its plugins.";
+    else if(!window.WebSocket)
+        throw "WebSockets not available on this browser!";
+
+    var socket = function() {
+
+    };
+    socket.prototype = {
+        open: "",
+        close: "",
+        on: "",
+        off: ""
+    };
+
+    if(!Q.socket)
+        Q.socket = socket;
 })();
