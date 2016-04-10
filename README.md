@@ -1,5 +1,5 @@
 # QLib
-The lightweight alternative to jQuery. But still as plugin supportive.
+The lightweight alternative to jQuery. But more focused at plugins instead of having a large library. Aswell as jQuery 1 and 2 being slow and not up to date with most JS functions in the newer browsers.
 
 QLib works basically like jQuery but has some tweaks.
 
